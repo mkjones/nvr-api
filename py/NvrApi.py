@@ -4,6 +4,7 @@ import urllib.request
 import sys
 import ssl
 import pprint as pp
+import time
 
 class Api:
 
@@ -15,14 +16,12 @@ class Api:
         self.port = port
 
     def bootstrap(self):
-        raw_json = self._get('bootstrap')
-        raw_data = json.loads(raw_json)
+        raw_data = self._getJson('bootstrap', {})
         data = raw_data['data'][0]
         return data
 
     def camera(self):
-        raw_json = self._get('camera')
-        raw_data = json.loads(raw_json)
+        raw_data = self._getJson('camera', {})
         return raw_data
 
     def getCameraIDs(self):
@@ -36,13 +35,33 @@ class Api:
             ret[cam_id] = cam_name
         return ret
 
+    def getRecordingIDs(self, time_back=86400):
+        causes = ['fullTimeRecording', 'motionRecording']
+        now = time.time()
+        start_time = int((now - time_back) * 1000)
+        end_time = int(now * 1000)
+        ids_only = True
+        raw_data = self._getJson('recording', {'cause[]':causes,
+                                           'startTime':start_time,
+                                           'endTime':end_time,
+                                           'idsOnly':ids_only,
+                                           'sortBy':'startTime',
+                                           'sort':'desc',
+                                           })
+        return raw_data['data']
 
-    def _get(self, path):
-        url = 'https://{host}:{port}/api/2.0/{path}?apiKey={apiKey}'.format(
+    def getRecordingMotion(self, recording_id:str):
+        raw_png = self._get('recording/{id}/motion'.format(id=recording_id),
+                            {'alpha':False})
+        return raw_png
+
+    def _get(self, path:str, qps:dict):
+        url = 'https://{host}:{port}/api/2.0/{path}?apiKey={apiKey}&{qps}'.format(
             host=self.host,
             port=self.port,
             path=path,
-            apiKey=self.key
+            apiKey=self.key,
+            qps=urllib.parse.urlencode(qps, doseq=True)
             )
 
         print(url)
@@ -50,13 +69,31 @@ class Api:
 
         request = urllib.request.Request(url=url)
         with urllib.request.urlopen(request, context=ctx) as result:
-            return result.read(Api.GET_BUFFER_LEN).decode('utf8')
+            return result.read(Api.GET_BUFFER_LEN)
+
+    def _getJson(self, path:str, qps:dict):
+        res = self._get(path, qps)
+        return json.loads(res.decode('utf8'))
 
 if __name__ == '__main__':
     print(sys.argv)
     key = sys.argv[1]
     host = sys.argv[2]
     api = Api(key, host)
-    pp.pprint(api.bootstrap())
+    api.bootstrap()
     pp.pprint(api.getCameraIDs())
+    recordings = api.getRecordingIDs()
+    pp.pprint(recordings)
+    for recording in recordings:
+        try:
+            png = api.getRecordingMotion(recording)
+        except Exception as e:
+            print('error with recording ' + recording)
+            print(e)
+            continue
+        filename = '/tmp/recording_{id}.png'.format(id=recording)
+        f = open(filename, 'wb')
+        f.write(png)
+        f.close()
+        print
     #pp.pprint(api.camera())
