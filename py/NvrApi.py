@@ -3,6 +3,7 @@ import urllib.parse
 import urllib.request
 import sys
 import ssl
+import pprint as pp
 
 class Api:
 
@@ -14,11 +15,30 @@ class Api:
         self.port = port
 
     def bootstrap(self):
-        data = self._get('bootstrap')
-        return json.loads(data)
+        raw_json = self._get('bootstrap')
+        raw_data = json.loads(raw_json)
+        data = raw_data['data'][0]
+        return data
+
+    def camera(self):
+        raw_json = self._get('camera')
+        raw_data = json.loads(raw_json)
+        return raw_data
+
+    def getCameraIDs(self):
+        """ Get a map<cam_id, cam_name> """
+        bs = self.bootstrap()
+        cams = bs['cameras']
+        ret = {}
+        for cam in cams:
+            cam_id = cam['_id']
+            cam_name = cam['deviceSettings']['name']
+            ret[cam_id] = cam_name
+        return ret
+
 
     def _get(self, path):
-        url = 'https://{host}:{port}/api/2.0/{path}?apiKey=%s'.format(
+        url = 'https://{host}:{port}/api/2.0/{path}?apiKey={apiKey}'.format(
             host=self.host,
             port=self.port,
             path=path,
@@ -37,4 +57,6 @@ if __name__ == '__main__':
     key = sys.argv[1]
     host = sys.argv[2]
     api = Api(key, host)
-    print(api.bootstrap())
+    pp.pprint(api.bootstrap())
+    pp.pprint(api.getCameraIDs())
+    #pp.pprint(api.camera())
