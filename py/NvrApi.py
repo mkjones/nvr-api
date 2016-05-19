@@ -5,6 +5,7 @@ import sys
 import ssl
 import pprint as pp
 import time
+import tempfile
 
 class Api:
 
@@ -50,10 +51,30 @@ class Api:
                                            })
         return raw_data['data']
 
+    def getRecordingInfos(self, recordingIDs:list):
+        csv = ','.join(recordingIDs)
+        infos = self._getJson('recording/'+csv, {})['data']
+        id2data = {}
+        for info in infos:
+            id2data[info['_id']] = info
+
+        return id2data
+
     def getRecordingMotion(self, recording_id:str):
         raw_png = self._get('recording/{id}/motion'.format(id=recording_id),
                             {'alpha':False})
         return raw_png
+
+    def downloadRecording(self, recording_id:str):
+        raw_mp4 = self._get('recording/{id}/download'.format(id=recording_id), {})
+        print("mp4 length: %d bytes" % len(raw_mp4))
+        prefix = "recording_"+recording_id
+        with tempfile.NamedTemporaryFile(mode='w+b',
+                                         suffix='.mp4',
+                                         prefix=prefix,
+                                         delete=False) as tmpfile:
+            tmpfile.write(raw_mp4)
+            return tmpfile.name
 
     def _get(self, path:str, qps:dict):
         url = 'https://{host}:{port}/api/2.0/{path}?apiKey={apiKey}&{qps}'.format(
@@ -69,7 +90,7 @@ class Api:
 
         request = urllib.request.Request(url=url)
         with urllib.request.urlopen(request, context=ctx) as result:
-            return result.read(Api.GET_BUFFER_LEN)
+            return result.read()
 
     def _getJson(self, path:str, qps:dict):
         res = self._get(path, qps)
@@ -83,15 +104,19 @@ if __name__ == '__main__':
     api.bootstrap()
     pp.pprint(api.getCameraIDs())
     recordings = api.getRecordingIDs()
+    recordingInfos = api.getRecordingInfos(recordings)
     pp.pprint(recordings)
     for recording in recordings:
+        cameraName = recordingInfos[recording]['meta']['cameraName']
         try:
+            print("Getting recording %s for camera %s"
+                  % (recording, cameraName))
             png = api.getRecordingMotion(recording)
         except Exception as e:
             print('error with recording ' + recording)
             print(e)
             continue
-        filename = '/tmp/recording_{id}.png'.format(id=recording)
+        filename = '/tmp/recordings/{camera}_{id}.png'.format(camera=cameraName, id=recording)
         f = open(filename, 'wb')
         f.write(png)
         f.close()

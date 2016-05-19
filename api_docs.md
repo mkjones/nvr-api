@@ -22,10 +22,10 @@ For example, an api key of `abcDEF1234` could be used to fetch bootstrap informa
 
 These are all the API methods I've seen so far.  I try to cover any parameters first, and then the return structure, which is generally JSON.
 
-* `bootstrap` 
+* `bootstrap`
 	* This fetches a bunch of data about the system
 	* Return value structure is a dictionary as follows:
-		* `meta` 
+		* `meta`
 		* `data` - a list of length 1, containing a dict
 			* `cloudHost`
 			* `cameraSchedules`
@@ -45,7 +45,7 @@ These are all the API methods I've seen so far.  I try to cover any parameters f
 			* `firmwares` - List of available firmware upgrades
 			* `nvrName` - String.  The name of this NVR.
 			* `user` - Dict.  Metadata about the current logged in user (including the api key).
-			* `alertSchedules` 
+			* `alertSchedules`
 			* `isFactoryDefault`
 			* `isLoggedIn`
 			* `isHardwareNvr`
@@ -54,48 +54,48 @@ These are all the API methods I've seen so far.  I try to cover any parameters f
 	* `GET` gives camera info
 	* `PUT` sets camera info (do you need to submit of it, or can you just send one updated value?)
 	* Info:
-		* `enableSpeaker` 
-		* `managed` 
-		* `speakerVolume` 
-		* `zones` 
-		* `lastSeen` 
-		* `analyticsSettings` 
-		* `protocolVersion` 
-		* `mapSettings` 
-		* `ispSettings` 
-		* `firmwareVersion` 
-		* `uptime` 
-		* `recordingSettings` 
-		* `uuid` 
-		* `firmwareBuild` 
-		* `platform` 
-		* `state` 
-		* `deviceSettings` 
-		* `username` 
-		* `scheduleId` 
-		* `internalHost` 
-		* `provisioned` 
-		* `deleted` 
-		* `lastRecordingId` 
-		* `micVolume` 
-		* `host` 
-		* `hasDefaultCredentials` 
-		* `name` 
-		* `channels` 
-		* `networkStatus` 
-		* `lastRecordingStartTime` 
-		* `systemInfo` 
-		* `mac` 
-		* `status` 
-		* `enableSuggestedVideoSettings` 
-		* `model` 
-		* `_id` 
-		* `osdSettings` 
-		* `enableStatusLed` 
+		* `enableSpeaker`
+		* `managed`
+		* `speakerVolume`
+		* `zones`
+		* `lastSeen`
+		* `analyticsSettings`
+		* `protocolVersion`
+		* `mapSettings`
+		* `ispSettings`
+		* `firmwareVersion`
+		* `uptime`
+		* `recordingSettings`
+		* `uuid`
+		* `firmwareBuild`
+		* `platform`
+		* `state`
+		* `deviceSettings`
+		* `username`
+		* `scheduleId`
+		* `internalHost`
+		* `provisioned`
+		* `deleted`
+		* `lastRecordingId`
+		* `micVolume`
+		* `host`
+		* `hasDefaultCredentials`
+		* `name`
+		* `channels`
+		* `networkStatus`
+		* `lastRecordingStartTime`
+		* `systemInfo`
+		* `mac`
+		* `status`
+		* `enableSuggestedVideoSettings`
+		* `model`
+		* `_id`
+		* `osdSettings`
+		* `enableStatusLed`
 * `recording` - Fetches information about recordings
 	* GET params, e.g. `cause%5B%5D=fullTimeRecording&cause%5B%5D=motionRecording&startTime=1462258800000&endTime=1462345200000&idsOnly=true&sortBy=startTime&sort=desc`
 		* `cause[]` - list (one key per entry) with possible values:
-			*  `fullTimeRecording` 
+			*  `fullTimeRecording`
 			*  `motionRecording`
 		*  `startTime` - ms since epoch. Show recordings after this time
 		*  `endTime` - ms since epoch.  Show recordings before this time.
@@ -108,3 +108,17 @@ These are all the API methods I've seen so far.  I try to cover any parameters f
 	* Optionally takes `width` parameter, with pixel width of thumbnail
 * `recording/{RecordingID}/motion` - Fetches a PNG showing where motion was detected on the given recording
 	* Optionally takes `alpha` parameter.  If true, returns PNG with alpha channel and red marking areas of motion.  If false, returns PNG with black showing no motion and white showing motion.
+	* Response:
+		* `inProgress`: boolean. 
+		* `locked`: boolean
+		* `endTime`: int.  ms since epoch.
+		* `cameras`: A list (why?) of cameras IDs involved.
+		* `eventType`: e.g. motionRecording, 
+		* `_id`: The recording ID.
+		* `meta`: dict with keys as follows:
+			* `key`: string.
+			* `cameraName`: string.  Human name for the camera (may be non-unique)
+			* `recordingPathId`: string.
+		* `startTime`: int.  ms since epoch.
+		* `markedForDeletion`: boolean.
+* `recording/{RecordingID}/download`: a video file representing the recording.
