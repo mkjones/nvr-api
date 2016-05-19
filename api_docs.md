@@ -51,8 +51,8 @@ These are all the API methods I've seen so far.  I try to cover any parameters f
 			* `isHardwareNvr`
 
 * `camera`
-	* `GET` gives camera info
-	* `PUT` sets camera info (do you need to submit of it, or can you just send one updated value?)
+	* `GET` gets camera info
+	* `PUT` sets camera info (do you need to submit all of it, or can you just send one updated value?)
 	* Info:
 		* `enableSpeaker`
 		* `managed`

@@ -36,6 +36,30 @@ class Api:
             ret[cam_id] = cam_name
         return ret
 
+    def getCameraInfos(self, cameraIds):
+        csv = ','.join(cameraIds)
+        infos = self._getJson('camera/'+csv, {})
+        id2data = {}
+        for info in infos['data']:
+            camId = info['_id']
+            id2data[camId] = info
+        return id2data
+
+    def getCameraInfo(self, cameraId):
+        return self.getCameraInfos([cameraId])[cameraId]
+
+    def disableCameraRecording(self, cameraId):
+        info = self.getCameraInfo(cameraId)
+        info['recordingSettings']['fullTimeRecordEnabled'] = False
+        info['recordingSettings']['motionRecordEnabled'] = False
+        return self._putJSON('camera/{id}'.format(id=cameraId), info)
+
+    def enableCameraMotionRecording(self, cameraId):
+        info = self.getCameraInfo(cameraId)
+        info['recordingSettings']['fullTimeRecordEnabled'] = False
+        info['recordingSettings']['motionRecordEnabled'] = True
+        return self._putJSON('camera/{id}'.format(id=cameraId), info)
+
     def getRecordingIDs(self, time_back=86400):
         causes = ['fullTimeRecording', 'motionRecording']
         now = time.time()
@@ -76,7 +100,8 @@ class Api:
             tmpfile.write(raw_mp4)
             return tmpfile.name
 
-    def _get(self, path:str, qps:dict):
+
+    def _makeurl(self, path:str, qps:dict):
         url = 'https://{host}:{port}/api/2.0/{path}?apiKey={apiKey}&{qps}'.format(
             host=self.host,
             port=self.port,
@@ -86,6 +111,10 @@ class Api:
             )
 
         print(url)
+        return url
+
+    def _get(self, path:str, qps:dict):
+        url = self._makeurl(path, qps)
         ctx = ssl._create_unverified_context()
 
         request = urllib.request.Request(url=url)
@@ -95,6 +124,20 @@ class Api:
     def _getJson(self, path:str, qps:dict):
         res = self._get(path, qps)
         return json.loads(res.decode('utf8'))
+
+    def _putJSON(self, path:str, data):
+        url = self._makeurl(path, {})
+        ctx = ssl._create_unverified_context()
+
+        dataStr = json.dumps(data).encode('utf8')
+        headers = {'Content-Type':'application/json'}
+        request = urllib.request.Request(url=url,
+                                         method='PUT',
+                                         headers=headers,
+                                         data=dataStr)
+        with urllib.request.urlopen(request, context=ctx) as result:
+            return result.read()
+
 
 if __name__ == '__main__':
     print(sys.argv)
