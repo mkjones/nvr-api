@@ -37,6 +37,7 @@ class Api:
         return ret
 
     def getCameraInfos(self, cameraIds):
+
         csv = ','.join(cameraIds)
         infos = self._getJson('camera/'+csv, {})
         id2data = {}
@@ -61,18 +62,24 @@ class Api:
         return self._putJSON('camera/{id}'.format(id=cameraId), info)
 
     def getRecordingIDs(self, time_back=86400):
-        causes = ['fullTimeRecording', 'motionRecording']
+        return self.getRecordingIDsForCamera(None, time_back)
+
+    def getRecordingIDsForCamera(self, cameraID, time_back=86400):
+        causes = ['motionRecording']
         now = time.time()
         start_time = int((now - time_back) * 1000)
         end_time = int(now * 1000)
         ids_only = True
-        raw_data = self._getJson('recording', {'cause[]':causes,
-                                           'startTime':start_time,
-                                           'endTime':end_time,
-                                           'idsOnly':ids_only,
-                                           'sortBy':'startTime',
-                                           'sort':'desc',
-                                           })
+        data = {'cause[]':causes,
+                'startTime':start_time,
+                'endTime':end_time,
+                'idsOnly':ids_only,
+                'sortBy':'startTime',
+                'sort':'desc',
+                }
+        if cameraID is not None:
+            data['cameras[]'] = cameraID
+        raw_data = self._getJson('recording', data)
         return raw_data['data']
 
     def getRecordingInfos(self, recordingIDs:list):
@@ -86,12 +93,11 @@ class Api:
 
     def getRecordingMotion(self, recording_id:str):
         raw_png = self._get('recording/{id}/motion'.format(id=recording_id),
-                            {'alpha':False})
+                            {'alpha':True})
         return raw_png
 
     def downloadRecording(self, recording_id:str):
         raw_mp4 = self._get('recording/{id}/download'.format(id=recording_id), {})
-        print("mp4 length: %d bytes" % len(raw_mp4))
         prefix = "recording_"+recording_id
         with tempfile.NamedTemporaryFile(mode='w+b',
                                          suffix='.mp4',
@@ -110,7 +116,6 @@ class Api:
             qps=urllib.parse.urlencode(qps, doseq=True)
             )
 
-        print(url)
         return url
 
     def _get(self, path:str, qps:dict):
@@ -146,13 +151,15 @@ if __name__ == '__main__':
     api = Api(key, host)
     api.bootstrap()
     pp.pprint(api.getCameraIDs())
-    recordings = api.getRecordingIDs()
-    recordingInfos = api.getRecordingInfos(recordings)
+    recordings = api.getRecordingIDs(86400 * 3)
+    recordingInfos = {}
+    for i in range(0, len(recordings), 20):
+        recordingInfos.update(api.getRecordingInfos(recordings[i:i+20]))
     pp.pprint(recordings)
     for recording in recordings:
         cameraName = recordingInfos[recording]['meta']['cameraName']
         try:
-            print("Getting recording %s for camera %s"
+            print("Getting recording motion %s for camera %s"
                   % (recording, cameraName))
             png = api.getRecordingMotion(recording)
         except Exception as e:
