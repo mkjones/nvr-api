@@ -10,17 +10,18 @@ def log(message):
 
 
 if __name__ == '__main__':
-    ips = [
-        # put IPs of phones you want to watch for here
-        ]
     cameras = [
         # put IDs of cameras you want to turn recording on / off for here
         ]
-    testers = [ct.Tester(ip) for ip in ips]
 
     key = sys.argv[1]
     host = sys.argv[2]
     api = NvrApi.Api(key, host)
+
+    ips = sys.argv[3].split(',')
+    testers = [ct.Tester(ip) for ip in ips]
+
+    cameras = sys.argv[4].split(',')
 
     prevDisableRecording = None
     lastAPITime = time.time()
