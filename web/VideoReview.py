@@ -2,7 +2,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.escape as es
 import sys
-import nvr.NvrApi as NvrApi
+import nvrsym.NvrApi as NvrApi
 
 # Displays a list of cameras
 class MainHandler(tornado.web.RequestHandler):
