@@ -2,6 +2,7 @@ import ConnectivityTester as ct
 import NvrApi
 import time
 import sys
+import asyncio
 
 def log(message):
     now = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -9,20 +10,8 @@ def log(message):
     sys.stdout.flush()
 
 
-if __name__ == '__main__':
-    cameras = [
-        # put IDs of cameras you want to turn recording on / off for here
-        ]
-
-    key = sys.argv[1]
-    host = sys.argv[2]
-    api = NvrApi.Api(key, host)
-
-    ips = sys.argv[3].split(',')
+async def run(api, ips, cameras):
     testers = [ct.Tester(ip) for ip in ips]
-
-    cameras = sys.argv[4].split(',')
-
     prevDisableRecording = None
     lastAPITime = time.time()
     while True:
@@ -33,7 +22,7 @@ if __name__ == '__main__':
             if disableRecording == prevDisableRecording and timeSinceLastAPI < 60:
                 # if we're in the same state as before and we recently
                 # made an API call, then don't bother making another one.
-                time.sleep(1)
+                asyncio.sleep(1)
             else:
                 timesince = "Time since last API call: {timesince}; up IPs: {up}".format(
                     timesince=int(timeSinceLastAPI),
@@ -42,13 +31,26 @@ if __name__ == '__main__':
                 if disableRecording:
                     log("Disabling recording.  {timesince}"
                         .format(timesince=timesince))
-                    [api.disableCameraRecording(c) for c in cameras]
+                    [await api.disableCameraRecording(c) for c in cameras]
                 else:
                     log("Enabling recording.  {timesince}".format(timesince=timesince))
-                    [api.enableCameraMotionRecording(c) for c in cameras]
+                    [await api.enableCameraMotionRecording(c) for c in cameras]
                 lastAPITime = time.time()
 
             prevDisableRecording = disableRecording
         except Exception as e:
             print("error in loop: ")
             print(e)
+
+if __name__ == '__main__':
+    key = sys.argv[1]
+    host = sys.argv[2]
+    api = NvrApi.Api(key, host)
+
+    ips = sys.argv[3].split(',')
+
+    cameras = sys.argv[4].split(',')
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run(api, ips, cameras))
+    loop.close()

@@ -125,7 +125,6 @@ class Api:
     async def _get(self, path:str, qps:dict):
         url = self._makeurl(path, qps)
         r = await self.session.get(url)
-        print('awaiting!')
         res_text = await r.read()
         return res_text
 
