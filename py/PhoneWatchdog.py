@@ -22,7 +22,7 @@ async def run(api, ips, cameras):
             if disableRecording == prevDisableRecording and timeSinceLastAPI < 60:
                 # if we're in the same state as before and we recently
                 # made an API call, then don't bother making another one.
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
             else:
                 timesince = "Time since last API call: {timesince}; up IPs: {up}".format(
                     timesince=int(timeSinceLastAPI),
